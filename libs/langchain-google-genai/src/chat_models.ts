@@ -180,6 +180,12 @@ export interface GoogleGenerativeAIChatInput
    * @default false
    */
   json?: boolean;
+
+  /**
+   * Whether or not to treat system instructions as part of the message
+   * May intentionally be undefined, meaning to compute this.
+   */
+  convertSystemMessageToHumanContent?: boolean | undefined;
 }
 
 /**
@@ -563,6 +569,8 @@ export class ChatGoogleGenerativeAI
 
   streamUsage = true;
 
+  convertSystemMessageToHumanContent: boolean | undefined;
+
   private client: GenerativeModel;
 
   get _isMultimodalModel() {
@@ -577,6 +585,9 @@ export class ChatGoogleGenerativeAI
       fields?.modelName?.replace(/^models\//, "") ??
       this.model;
     this.model = this.modelName;
+    
+    this.convertSystemMessageToHumanContent =
+      fields?.convertSystemMessageToHumanContent;
 
     this.maxOutputTokens = fields?.maxOutputTokens ?? this.maxOutputTokens;
 
@@ -651,6 +662,30 @@ export class ChatGoogleGenerativeAI
     this.streamUsage = fields?.streamUsage ?? this.streamUsage;
   }
 
+  get useSystemInstruction(): boolean {
+    return typeof this.convertSystemMessageToHumanContent === "boolean"
+      ? !this.convertSystemMessageToHumanContent
+      : this.computeUseSystemInstruction;
+  }
+
+  get computeUseSystemInstruction(): boolean {
+    // This works on models from April 2024 and later
+    //   Vertex AI: gemini-1.5-pro and gemini-1.0-002 and later
+    //   AI Studio: gemini-1.5-pro-latest
+    if (this.modelName === "gemini-1.0-pro-001") {
+      return false;
+    } else if (this.modelName.startsWith("gemini-pro-vision")) {
+      return false;
+    } else if (this.modelName.startsWith("gemini-1.0-pro-vision")) {
+      return false;
+    } else if (this.modelName === "gemini-pro") {
+      // on AI Studio gemini-pro is still pointing at gemini-1.0-pro-001
+      return false;
+    }
+    return true;
+  }
+
+
   getLsParams(options: this["ParsedCallOptions"]): LangSmithParams {
     return {
       ls_provider: "google_genai",
@@ -706,8 +741,16 @@ export class ChatGoogleGenerativeAI
   ): Promise<ChatResult> {
     const prompt = convertBaseMessagesToContent(
       messages,
-      this._isMultimodalModel
+      this._isMultimodalModel,
+      this.convertSystemMessageToHumanContent
     );
+    // if first message has role “system” thus model supports system and system message               
+    // needs to be extracted from prompt into systemInstruction field of Generative Model
+    if (prompt[0].role === "system" && this.client.systemInstruction) {
+        this.client.systemInstruction = prompt.shift()
+        // prompt = prompt.slice(1)
+    }
+           
     const parameters = this.invocationParams(options);
 
     // Handle streaming

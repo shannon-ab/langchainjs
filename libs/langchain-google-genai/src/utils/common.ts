@@ -183,7 +183,7 @@ export function convertBaseMessagesToContent(
   isMultimodalModel: boolean,
   convertSystemMessageToHumanContent: boolean  = false
 ) {
-  return messages.reduce<{
+  const result = messages.reduce<{
     content: Content[];
     mergeWithPreviousContent: boolean;
   }>(
@@ -224,23 +224,33 @@ export function convertBaseMessagesToContent(
           content: acc.content,
         };
       }
+
       let actualRole = role;
       if (actualRole === "function" || (actualRole === "system" && !convertSystemMessageToHumanContent)) {
         // GenerativeAI API will throw an error if the role is not "user" or "model."
         actualRole = "user";
       }
+
       const content: Content = {
         role: actualRole,
         parts,
       };
+
       return {
         mergeWithPreviousContent: author === "system" && !convertSystemMessageToHumanContent,
         content: [...acc.content, content],
       };
     },
     { content: [], mergeWithPreviousContent: false }
-  ).content;
+  );
+
+  // Log the final content list before returning
+  console.log("Final list of messages:", JSON.stringify(result.content, null, 2));
+
+  // Return the final content
+  return result.content;
 }
+
 
 export function mapGenerateContentResultToChatResult(
   response: EnhancedGenerateContentResponse,

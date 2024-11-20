@@ -183,7 +183,7 @@ export function convertBaseMessagesToContent(
   isMultimodalModel: boolean,
   convertSystemMessageToHumanContent: boolean  = false
 ) {
-  const result = messages.reduce<{
+  return messages.reduce<{
     content: Content[];
     mergeWithPreviousContent: boolean;
   }>(
@@ -243,12 +243,6 @@ export function convertBaseMessagesToContent(
     },
     { content: [], mergeWithPreviousContent: false }
   );
-
-  // Log the final content list before returning
-  console.log("Final list of messages:", JSON.stringify(result.content, null, 2));
-
-  // Return the final content
-  return result.content;
 }
 
 

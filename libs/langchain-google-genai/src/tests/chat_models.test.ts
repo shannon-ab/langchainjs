@@ -289,6 +289,17 @@ test("Input has single system message that is not the first message, third param
   );
 });
 
+test("Input has multiple system message, third parameter true", async () => {
+  const messages = [
+    new SystemMessage("What's the weather like in new york?"),
+    new SystemMessage("You are a helpful assistant")
+  ];
+
+  expect(() => convertBaseMessagesToContent(messages, false, true)).toThrow(
+    "System message should be the first one"
+  );
+});
+
 test("Input has no system message and one user message, third parameter true", async () => {
   const messages = [
     new HumanMessage("What's the weather like in new york?")

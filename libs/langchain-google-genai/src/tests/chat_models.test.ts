@@ -253,3 +253,86 @@ test("convertBaseMessagesToContent correctly creates properly formatted content"
     },
   ]);
 });
+
+test("Input has single system message followed by one user message, third parameter true", async () => {
+  const messages = [
+    new SystemMessage("You are a helpful assistant"),
+    new HumanMessage("What's the weather like in new york?")
+  ];
+
+  const messagesAsGoogleContent = convertBaseMessagesToContent(messages, false, true);
+
+  expect(messagesAsGoogleContent).toEqual([
+    {
+      role: "system",
+      parts: [
+        { text: "You are a helpful assistant" }
+      ]
+    },
+    {
+      role: "user",
+      parts: [
+        { text: "What's the weather like in new york?" }
+      ],
+    },
+  ]);
+});
+
+test("Input has single system message that is not the first message, third parameter true", async () => {
+  const messages = [
+    new HumanMessage("What's the weather like in new york?"),
+    new SystemMessage("You are a helpful assistant")
+  ];
+
+  expect(() => convertBaseMessagesToContent(messages, false, true)).toThrow(
+    "System message should be the first one"
+  );
+});
+
+test("Input has no system message and one user message, third parameter true", async () => {
+  const messages = [
+    new HumanMessage("What's the weather like in new york?")
+  ];
+
+  const messagesAsGoogleContent = convertBaseMessagesToContent(messages, false, true);
+
+  expect(messagesAsGoogleContent).toEqual([
+    {
+      role: "user",
+      parts: [
+        { text: "What's the weather like in new york?" }
+      ],
+    },
+  ]);
+});
+
+test("Input has no system message and multiple user messages, third parameter true", async () => {
+  const messages = [
+    new HumanMessage("What's the weather like in new york?"),
+    new HumanMessage("Will it rain today?"),
+    new HumanMessage("How about next week?")
+  ];
+
+  const messagesAsGoogleContent = convertBaseMessagesToContent(messages, false, true);
+
+  expect(messagesAsGoogleContent).toEqual([
+    {
+      role: "user",
+      parts: [
+        { text: "What's the weather like in new york?" }
+      ],
+    },
+    {
+      role: "user",
+      parts: [
+        { text: "Will it rain today?" }
+      ],
+    },
+    {
+      role: "user",
+        parts: [
+          { text: "How about next week?" }
+        ],
+    },
+  ]);
+});

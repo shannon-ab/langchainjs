@@ -242,7 +242,7 @@ export function convertBaseMessagesToContent(
       };
     },
     { content: [], mergeWithPreviousContent: false }
-  );
+  ).content;
 }
 
 
